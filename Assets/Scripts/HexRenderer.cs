@@ -23,6 +23,7 @@ public class HexRenderer : MonoBehaviour
     private Mesh mesh;
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
+    private MeshCollider meshCollider;
 
     private List<Face> faces;
 
@@ -33,16 +34,21 @@ public class HexRenderer : MonoBehaviour
     public float height;
     public bool isFlatTopped;
 
+    bool checkingOverlap = false;
+
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
         meshRenderer = GetComponent<MeshRenderer>();
+        meshCollider = GetComponent<MeshCollider>();
 
         mesh = new Mesh();
         mesh.name = "Hex";
 
         meshFilter.mesh = mesh;
         meshRenderer.material = material;
+
+        meshCollider.sharedMesh = mesh;
     }
 
     public void OnEnable()
@@ -119,13 +125,21 @@ public class HexRenderer : MonoBehaviour
 
     public Collider[] CheckNearbyTiles()
     {
-        return Physics.OverlapSphere(transform.position, 4.18f, 1<<8);
+        //transform.GetComponent<SphereCollider>().enabled = true;
+        //transform.GetComponent<MeshCollider>().convex = false;
+        Collider[] lg = Physics.OverlapSphere(transform.position, 2.18f);
+        Debug.Log(lg.Length);
+        //transform.GetComponent<MeshCollider>().convex = true;
+        return lg;
+        //checkingOverlap = true;
     }
+    
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, 4.18f);
+        Gizmos.DrawWireSphere(transform.position, 2.18f);
     }
+    
 
     public void IsMovable()
     {
