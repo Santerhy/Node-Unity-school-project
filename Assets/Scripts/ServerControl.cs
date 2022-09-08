@@ -16,8 +16,13 @@ public class ServerControl : MonoBehaviour
     public GameObject lastLocationOb;
     public List<GameObject> movableTiles;
 
+    public List<Material> playerColors;
+    private Material myMaterial;
+
     bool myTurn = true;
     bool moving = false;
+
+    int claimNumber;
 
     // Start is called before the first frame update
     void Start()
@@ -32,14 +37,19 @@ public class ServerControl : MonoBehaviour
         {
             JSONNode node = JSON.Parse(playerInfo);
 
-            GameObject go = Instantiate(player, hgl.tiles[node["spawnIndex"]].transform.position, Quaternion.identity);
+            claimNumber = node["team"];
+            GameObject go = Instantiate(player, hgl.tiles[claimNumber].transform.position, Quaternion.identity);
             PlayerController pc = go.GetComponent<PlayerController>();
             go.name = "Player" + node["socketId"];
             pc.mySOcketId = node["socketId"];
             currentLocationOb = hgl.tiles[node["spawnIndex"]].gameObject;
             currentLocationTr = currentLocationOb.transform;
             go.transform.position = currentLocationTr.position;
+            myMaterial = playerColors[claimNumber];
+            go.GetComponent<Renderer>().material = myMaterial;
             player = go;
+
+            ClaimOneTile();
         });
     }
 
@@ -65,6 +75,7 @@ public class ServerControl : MonoBehaviour
                                     currentLocationOb = hit.collider.gameObject;
                                     //Conquest new tile
                                     Move();
+                                    //ClaimOneTile();
                                 }
                             }
                         }
@@ -103,9 +114,17 @@ public class ServerControl : MonoBehaviour
     {
         foreach (GameObject go in movableTiles)
         {
-            go.GetComponent<HexRenderer>().NotMovable();
+            if (go != currentLocationOb)
+                go.GetComponent<HexRenderer>().NotMovable();
+            else
+                ClaimOneTile();
         }
         movableTiles.Clear();
+    }
+
+    private void ClaimOneTile()
+    {
+        currentLocationOb.GetComponent<HexRenderer>().Claim(claimNumber, myMaterial);
     }
 
 }

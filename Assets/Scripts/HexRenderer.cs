@@ -34,7 +34,7 @@ public class HexRenderer : MonoBehaviour
     public float height;
     public bool isFlatTopped;
 
-    bool checkingOverlap = false;
+    public int claimedBy = -1;
 
     private void Awake()
     {
@@ -148,5 +148,11 @@ public class HexRenderer : MonoBehaviour
     public void NotMovable()
     {
         meshRenderer.material = material;
+    }
+
+    public void Claim(int claimer, Material m)
+    {
+        claimedBy = claimer;
+        material = m;
     }
 }
