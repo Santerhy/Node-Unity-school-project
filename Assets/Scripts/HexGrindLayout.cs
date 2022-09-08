@@ -15,16 +15,11 @@ public class HexGrindLayout : MonoBehaviour
     public Material material;
 
     public GameObject hr;
+    public List<GameObject> tiles;
 
     private void OnEnable()
     {
         LayoutGrid();
-    }
-
-    private void OnValidate()
-    {
-        if (Application.isPlaying)
-            LayoutGrid();
     }
 
     private void LayoutGrid()
@@ -45,6 +40,7 @@ public class HexGrindLayout : MonoBehaviour
                 hexRenderer.DrawMesh();
 
                 tile.transform.SetParent(transform, true);
+                tiles.Add(tile);
             }
         }
     }

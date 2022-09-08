@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 1721715146}
   m_Layer: 0
   m_Name: HexRenderer
-  m_TagString: Untagged
+  m_TagString: Tile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -96,6 +96,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: 2b1cb42c64f0a6b42ad1797a42db21b3, type: 2}
+  movable: {fileID: 2100000, guid: 90869ef3530e73248ab4d3f40dd7fec4, type: 2}
   innerSize: 0
   outerSize: 2
   height: -1
@@ -111,6 +112,6 @@ MeshCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}

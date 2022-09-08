@@ -27,6 +27,7 @@ public class HexRenderer : MonoBehaviour
     private List<Face> faces;
 
     public Material material;
+    public Material movable;
     public float innerSize;
     public float outerSize;
     public float height;
@@ -118,6 +119,20 @@ public class HexRenderer : MonoBehaviour
 
     public Collider[] CheckNearbyTiles()
     {
-        return Physics.OverlapSphere(transform.position, 2.18f);
+        return Physics.OverlapSphere(transform.position, 4.18f, 1<<8);
+    }
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, 4.18f);
+    }
+
+    public void IsMovable()
+    {
+        meshRenderer.material = movable;
+    }
+    public void NotMovable()
+    {
+        meshRenderer.material = material;
     }
 }
