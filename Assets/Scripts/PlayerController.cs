@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     public int startIndex;
     public int claimNumber;
     public Material myMaterial;
+    public Material claimMaterial;
 
     // Start is called before the first frame update
     void Start()

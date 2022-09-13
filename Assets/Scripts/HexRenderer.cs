@@ -60,6 +60,7 @@ public class HexRenderer : MonoBehaviour
     public void SetMaterial(Material m)
     {
         material = m;
+        meshRenderer.material = material;
     }
 
     public void DrawMesh()
@@ -154,5 +155,6 @@ public class HexRenderer : MonoBehaviour
     {
         claimedBy = claimer;
         material = m;
+        meshRenderer.material = material;
     }
 }
