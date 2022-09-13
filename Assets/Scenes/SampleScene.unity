@@ -286,7 +286,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &615729610
 RectTransform:
   m_ObjectHideFlags: 0
@@ -814,6 +814,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 9de1965b97af0324db82e3d634090087, type: 2}
   - {fileID: 2100000, guid: 5fe384dd9a05846469567801062c32d6, type: 2}
   - {fileID: 2100000, guid: 11e4b273f8ce78d48afb49d3564cdba9, type: 2}
+  moveButton: {fileID: 615729611}
 --- !u!4 &1355317751
 Transform:
   m_ObjectHideFlags: 0

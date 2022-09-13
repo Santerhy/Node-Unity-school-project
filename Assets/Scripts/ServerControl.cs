@@ -4,11 +4,19 @@ using UnityEngine;
 using Firesplash.UnityAssets.SocketIO;
 using SimpleJSON;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class ServerControl : MonoBehaviour
 {
     public SocketIOCommunicator sioCom;
+    public List<GameObject> players;
     public GameObject player;
+
+    [SerializeField]
+    private GameObject myPlayer;
+    [SerializeField]
+    private PlayerController myPlayerController;
+
     public HexGrindLayout hgl;
 
     public Transform currentLocationTr;
@@ -18,8 +26,9 @@ public class ServerControl : MonoBehaviour
 
     public List<Material> playerColors;
     private Material myMaterial;
+    public Button moveButton;
 
-    bool myTurn = true;
+    bool myTurn = false;
     bool moving = false;
 
     int claimNumber;
@@ -33,23 +42,78 @@ public class ServerControl : MonoBehaviour
             sioCom.Instance.Emit("CREATEPLAYER");
         });
 
-        sioCom.Instance.On("InstancePlayer", (playerInfo) =>
+        sioCom.Instance.On("INSTANCEPLAYER", (playerInfo) =>
         {
             JSONNode node = JSON.Parse(playerInfo);
 
-            claimNumber = node["team"];
-            GameObject go = Instantiate(player, hgl.tiles[claimNumber].transform.position, Quaternion.identity);
+            GameObject go = Instantiate(player, hgl.tiles[node["spawnIndex"]].transform.position, Quaternion.identity);
             PlayerController pc = go.GetComponent<PlayerController>();
-            go.name = "Player" + node["socketId"];
-            pc.mySOcketId = node["socketId"];
-            currentLocationOb = hgl.tiles[node["spawnIndex"]].gameObject;
-            currentLocationTr = currentLocationOb.transform;
-            go.transform.position = currentLocationTr.position;
-            myMaterial = playerColors[claimNumber];
-            go.GetComponent<Renderer>().material = myMaterial;
-            player = go;
+            pc.claimNumber = node["team"];
+            go.name = node["socketId"];
+            pc.mySocketId = node["socketId"];
+            pc.currentLocationOb = hgl.tiles[node["spawnIndex"]].gameObject;
+            pc.currentLocationTr = pc.currentLocationOb.transform;
+            go.transform.position = pc.currentLocationTr.position;
+            pc.myMaterial = playerColors[pc.claimNumber];
+            go.GetComponent<Renderer>().material = pc.myMaterial;
+            players.Add(go);
+
+            if (myPlayer == null)
+            {
+                myPlayer = go;
+                myPlayerController = pc;
+            }
 
             ClaimOneTile();
+        });
+
+        sioCom.Instance.On("INSTANCEOTHERS", (playerInfo) =>
+        {
+            JSONNode node = JSON.Parse(playerInfo);
+
+            GameObject go = Instantiate(player, hgl.tiles[node["spawnIndex"]].transform.position, Quaternion.identity);
+            PlayerController pc = go.GetComponent<PlayerController>();
+            pc.claimNumber = node["team"];
+            go.name = node["socketId"];
+            pc.mySocketId = node["socketId"];
+            pc.currentLocationOb = hgl.tiles[node["spawnIndex"]].gameObject;
+            pc.currentLocationTr = pc.currentLocationOb.transform;
+            go.transform.position = pc.currentLocationTr.position;
+            pc.myMaterial = playerColors[pc.claimNumber];
+            go.GetComponent<Renderer>().material = pc.myMaterial;
+            players.Add(go);
+        });
+
+        sioCom.Instance.On("STARTTURN", (data) =>
+        {
+            myTurn = true;
+            moveButton.gameObject.SetActive(true);
+        });
+
+        sioCom.Instance.On("ENDTURN", (data) =>
+        {
+            myTurn = false;
+            moveButton.gameObject.SetActive(false);
+
+            sioCom.Instance.Emit("TURNENDED");
+        });
+
+        sioCom.Instance.On("MOVEPLAYER", (playerInfo) =>
+        {
+            JSONNode node = JSONNode.Parse(playerInfo);
+            Debug.Log("player location: " + node["location"]);
+            if (node["name"] != myPlayerController.mySocketId)
+            {
+                foreach (GameObject pl in players)
+                {
+                    Debug.Log("playername: " + pl.GetComponent<PlayerController>().mySocketId + ", node: " + node["name"]);
+                    if (pl.GetComponent<PlayerController>().mySocketId == node["name"])
+                    {
+                        Debug.Log("Player found");
+                        pl.transform.position = hgl.tiles[node["location"]].transform.position;
+                    }
+                }
+            }
         });
     }
 
@@ -72,7 +136,7 @@ public class ServerControl : MonoBehaviour
                             {
                                 if (movableTiles.Contains(hit.collider.gameObject))
                                 {
-                                    currentLocationOb = hit.collider.gameObject;
+                                    myPlayerController.currentLocationOb = hit.collider.gameObject;
                                     //Conquest new tile
                                     Move();
                                     //ClaimOneTile();
@@ -90,7 +154,7 @@ public class ServerControl : MonoBehaviour
 
     public void ShowMovableTile()
     {
-        Collider[] cl = currentLocationOb.GetComponent<HexRenderer>().CheckNearbyTiles();
+        Collider[] cl = myPlayer.GetComponent<PlayerController>().currentLocationOb.GetComponent<HexRenderer>().CheckNearbyTiles();
 
         foreach (Collider c in cl)
         {
@@ -107,14 +171,23 @@ public class ServerControl : MonoBehaviour
     private void Move()
     {
         moving = false;
-        player.transform.position = currentLocationOb.transform.position;
+        myPlayer.transform.position = myPlayerController.currentLocationOb.transform.position;
         ClearMovableTiles();
+
+        JSONObject moveData = new JSONObject();
+        moveData.Add("name", myPlayerController.mySocketId);
+        moveData.Add("location", hgl.tiles.IndexOf(myPlayerController.currentLocationOb));
+        string plData = moveData.ToString();
+        sioCom.Instance.Emit("MOVE", plData, false);
+
+
+        sioCom.Instance.Emit("PLAYERENDTURN", "testidata", true);
     }
     private void ClearMovableTiles()
     {
         foreach (GameObject go in movableTiles)
         {
-            if (go != currentLocationOb)
+            if (go != myPlayerController.currentLocationOb)
                 go.GetComponent<HexRenderer>().NotMovable();
             else
                 ClaimOneTile();
@@ -124,7 +197,7 @@ public class ServerControl : MonoBehaviour
 
     private void ClaimOneTile()
     {
-        currentLocationOb.GetComponent<HexRenderer>().Claim(claimNumber, myMaterial);
+        myPlayerController.currentLocationOb.GetComponent<HexRenderer>().Claim(myPlayerController.claimNumber, myPlayerController.myMaterial);
     }
 
 }
