@@ -27,6 +27,9 @@ public class ServerControl : MonoBehaviour
     public List<Material> playerColors;
     public List<Material> claimMaterials;
     public Button moveButton;
+    public Text turnText;
+
+    public List<Text> scoresList;
 
     bool myTurn = false;
     bool moving = false;
@@ -58,6 +61,7 @@ public class ServerControl : MonoBehaviour
             pc.claimMaterial = claimMaterials[pc.claimNumber];
             go.GetComponent<Renderer>().material = pc.myMaterial;
             players.Add(go);
+            ActivatePlayerScores();
 
             if (myPlayer == null)
             {
@@ -65,11 +69,15 @@ public class ServerControl : MonoBehaviour
                 myPlayerController = pc;
             }
 
+            hgl.tiles[node["spawnIndex"]].GetComponent<HexRenderer>().Claim(pc.claimNumber, pc.claimMaterial);
+
             ClaimOneTile();
+            UpdateTilesToList();
         });
 
         sioCom.Instance.On("INSTANCEOTHERS", (playerInfo) =>
         {
+            Debug.Log("Instance others");
             JSONNode node = JSON.Parse(playerInfo);
 
             GameObject go = Instantiate(player, hgl.tiles[node["spawnIndex"]].transform.position, Quaternion.identity);
@@ -84,6 +92,9 @@ public class ServerControl : MonoBehaviour
             pc.claimMaterial = claimMaterials[pc.claimNumber];
             go.GetComponent<Renderer>().material = pc.myMaterial;
             players.Add(go);
+
+
+            hgl.tiles[node["spawnIndex"]].GetComponent<HexRenderer>().Claim(pc.claimNumber, pc.claimMaterial);
         });
 
         sioCom.Instance.On("STARTTURN", (data) =>
@@ -98,6 +109,13 @@ public class ServerControl : MonoBehaviour
             moveButton.gameObject.SetActive(false);
 
             sioCom.Instance.Emit("TURNENDED");
+        });
+
+        sioCom.Instance.On("CHANGETURNTEXT", (data) =>
+        {
+            int turn = int.Parse(data);
+            
+            ChangeTurnText(turn);
         });
 
         sioCom.Instance.On("MOVEPLAYER", (playerInfo) =>
@@ -187,7 +205,7 @@ public class ServerControl : MonoBehaviour
 
     private void UpdateListToTiles()
     {
-        Debug.Log(tilesClaimStatus[0]);
+        //Debug.Log(tilesClaimStatus[0]);
         for (int i = 0; i < tilesClaimStatus.Count; i++)
         {
             HexRenderer hr = hgl.tiles[i].GetComponent<HexRenderer>();
@@ -197,13 +215,21 @@ public class ServerControl : MonoBehaviour
         }
     }
 
+    private void ActivatePlayerScores()
+    {
+        for (int i = 0; i < players.Count; i++)
+        {
+            scoresList[i].gameObject.active = true;
+        }
+    }
+
     public void ShowMovableTile()
     {
         Collider[] cl = myPlayer.GetComponent<PlayerController>().currentLocationOb.GetComponent<HexRenderer>().CheckNearbyTiles();
 
         foreach (Collider c in cl)
         {
-            if (c.gameObject.CompareTag("Tile"))
+            if (c.gameObject.CompareTag("Tile") && c.gameObject != myPlayerController.currentLocationOb)
             {
                 movableTiles.Add(c.gameObject);
                 c.gameObject.GetComponent<HexRenderer>().IsMovable();
@@ -246,4 +272,27 @@ public class ServerControl : MonoBehaviour
         myPlayerController.currentLocationOb.GetComponent<HexRenderer>().Claim(myPlayerController.claimNumber, myPlayerController.claimMaterial);
     }
 
+    private void ChangeTurnText(int player)
+    {
+        Debug.Log("text changed " + player);
+        switch (player)
+        {
+            case 0:
+                turnText.color = Color.red;
+                turnText.text = "Player 1 turn";
+                break;
+            case 1:
+                turnText.color = Color.blue;
+                turnText.text = "Player 2 turn";
+                break;
+            case 2:
+                turnText.color = Color.yellow;
+                turnText.text = "Player 3 turn";
+                break;
+            case 3:
+                turnText.color= Color.green;
+                turnText.text = "Player 4 turn";
+                break;
+        }
+    }
 }

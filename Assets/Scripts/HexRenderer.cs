@@ -153,6 +153,7 @@ public class HexRenderer : MonoBehaviour
 
     public void Claim(int claimer, Material m)
     {
+        Debug.Log("tile claimed by: " + claimer);
         claimedBy = claimer;
         material = m;
         meshRenderer.material = material;
