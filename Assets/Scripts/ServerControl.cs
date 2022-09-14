@@ -77,7 +77,6 @@ public class ServerControl : MonoBehaviour
 
         sioCom.Instance.On("INSTANCEOTHERS", (playerInfo) =>
         {
-            Debug.Log("Instance others");
             JSONNode node = JSON.Parse(playerInfo);
 
             GameObject go = Instantiate(player, hgl.tiles[node["spawnIndex"]].transform.position, Quaternion.identity);
@@ -118,15 +117,26 @@ public class ServerControl : MonoBehaviour
             ChangeTurnText(turn);
         });
 
+        sioCom.Instance.On("UPDATESCORES", (data) =>
+        {
+            JSONNode node = JSON.Parse(data);
+            int[] scores = new int[4];
+            for (int i = 0; i < 4; i++)
+            {
+                scores[i] = node[i];
+                Debug.Log("player " + scores[i].ToString() + " scores: " + node[i]);
+            }
+
+            UpdateScores(scores);
+        });
+
         sioCom.Instance.On("MOVEPLAYER", (playerInfo) =>
         {
             JSONNode node = JSONNode.Parse(playerInfo);
-            Debug.Log("player location: " + node["location"]);
             if (node["name"] != myPlayerController.mySocketId)
             {
                 foreach (GameObject pl in players)
                 {
-                    Debug.Log("playername: " + pl.GetComponent<PlayerController>().mySocketId + ", node: " + node["name"]);
                     if (pl.GetComponent<PlayerController>().mySocketId == node["name"])
                     {
                         Debug.Log("Player found");
@@ -172,9 +182,7 @@ public class ServerControl : MonoBehaviour
                                 if (movableTiles.Contains(hit.collider.gameObject))
                                 {
                                     myPlayerController.currentLocationOb = hit.collider.gameObject;
-                                    //Conquest new tile
                                     Move();
-                                    //ClaimOneTile();
                                 }
                             }
                         }
@@ -274,7 +282,6 @@ public class ServerControl : MonoBehaviour
 
     private void ChangeTurnText(int player)
     {
-        Debug.Log("text changed " + player);
         switch (player)
         {
             case 0:
@@ -293,6 +300,15 @@ public class ServerControl : MonoBehaviour
                 turnText.color= Color.green;
                 turnText.text = "Player 4 turn";
                 break;
+        }
+    }
+
+    private void UpdateScores(int[] scores)
+    {
+        for (int i = 0; i<scoresList.Count; i++)
+        {
+            scoresList[i].text = "P" + (i + 1).ToString() + ": " + scores[i];
+            Debug.Log(i.ToString() + " " + scores[i].ToString());
         }
     }
 }
