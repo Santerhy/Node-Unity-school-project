@@ -69,7 +69,7 @@ public class ServerControl : MonoBehaviour
                 myPlayerController = pc;
             }
 
-            hgl.tiles[node["spawnIndex"]].GetComponent<HexRenderer>().Claim(pc.claimNumber, pc.claimMaterial);
+            //hgl.tiles[node["spawnIndex"]].GetComponent<HexRenderer>().Claim(pc.claimNumber, pc.claimMaterial);
 
             ClaimOneTile();
             UpdateTilesToList();
@@ -120,12 +120,19 @@ public class ServerControl : MonoBehaviour
         sioCom.Instance.On("UPDATESCORES", (data) =>
         {
             JSONNode node = JSON.Parse(data);
-            int[] scores = new int[4];
+            List<int> scores = new List<int>();
+            /*
             for (int i = 0; i < 4; i++)
             {
-                scores[i] = node[i];
-                Debug.Log("player " + scores[i].ToString() + " scores: " + node[i]);
+                scores.Add(node[i]);
+                Debug.Log("player " + i.ToString() + " scores: " + node[i]);
             }
+            */
+
+            scores.Add(node[0]);
+            scores.Add(node[1]);
+            scores.Add(node[2]);
+            scores.Add(node[3]);
 
             UpdateScores(scores);
         });
@@ -141,6 +148,8 @@ public class ServerControl : MonoBehaviour
                     {
                         Debug.Log("Player found");
                         pl.transform.position = hgl.tiles[node["location"]].transform.position;
+                        pl.GetComponent<PlayerController>().currentLocationOb = hgl.tiles[node["location"]];
+                        pl.GetComponent<PlayerController>().currentLocationTr = hgl.tiles[node["location"]].transform;
                     }
                 }
             }
@@ -153,8 +162,8 @@ public class ServerControl : MonoBehaviour
 
         sioCom.Instance.On("UPDATETILESFROMSERVER", (tileData) =>
         {
-            JSONNode node = JSON.Parse(tileData);
-            for (int i = 0; i <150; i++)
+            JSONArray node = (JSONArray)JSON.Parse(tileData);
+            for (int i = 0; i < tilesClaimStatus.Count; i++)
             {
                 tilesClaimStatus[i] = node[i];
             }
@@ -181,8 +190,11 @@ public class ServerControl : MonoBehaviour
                             {
                                 if (movableTiles.Contains(hit.collider.gameObject))
                                 {
-                                    myPlayerController.currentLocationOb = hit.collider.gameObject;
-                                    Move();
+                                    if (CheckTileOccupation(hit.collider.gameObject))
+                                    {
+                                        myPlayerController.currentLocationOb = hit.collider.gameObject;
+                                        Move();
+                                    }
                                 }
                             }
                         }
@@ -193,6 +205,17 @@ public class ServerControl : MonoBehaviour
                 }
             }
         }
+    }
+
+    private bool CheckTileOccupation(GameObject col)
+    {
+        for (int i = 0; i < players.Count - 1; i++)
+        {
+            if (col == players[i].GetComponent<PlayerController>().currentLocationOb)
+                return false;
+        }
+
+        return true;
     }
 
     private void UpdateTilesToList()
@@ -206,6 +229,8 @@ public class ServerControl : MonoBehaviour
         for (int i = 0; i < tilesClaimStatus.Count; i++)
         {
             tileData[i] = tilesClaimStatus[i];
+            if (i > 145)
+                Debug.Log("i = " + i.ToString() + " claimde by " + tilesClaimStatus[i]);
         }
         string data = tileData.ToString();
         sioCom.Instance.Emit("UPDATEFIELDTOLIST", data, true);
@@ -213,13 +238,15 @@ public class ServerControl : MonoBehaviour
 
     private void UpdateListToTiles()
     {
-        //Debug.Log(tilesClaimStatus[0]);
         for (int i = 0; i < tilesClaimStatus.Count; i++)
         {
             HexRenderer hr = hgl.tiles[i].GetComponent<HexRenderer>();
-            hr.claimedBy = tilesClaimStatus[i];
+
             if (tilesClaimStatus[i] != -1)
+            {
                 hr.SetMaterial(claimMaterials[tilesClaimStatus[i]]);
+                hr.claimedBy = tilesClaimStatus[i];
+            }
         }
     }
 
@@ -251,6 +278,7 @@ public class ServerControl : MonoBehaviour
     {
         moving = false;
         myPlayer.transform.position = myPlayerController.currentLocationOb.transform.position;
+        myPlayerController.currentLocationTr = myPlayerController.currentLocationOb.transform;
         ClearMovableTiles();
 
         JSONObject moveData = new JSONObject();
@@ -303,7 +331,7 @@ public class ServerControl : MonoBehaviour
         }
     }
 
-    private void UpdateScores(int[] scores)
+    private void UpdateScores(List<int> scores)
     {
         for (int i = 0; i<scoresList.Count; i++)
         {
