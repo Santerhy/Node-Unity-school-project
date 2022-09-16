@@ -27,6 +27,9 @@ public class ServerControl : MonoBehaviour
     public List<Material> playerColors;
     public List<Material> claimMaterials;
     public Button moveButton;
+    public Button superClaimButton;
+    public Text superClaimText;
+    private int superClaimCounter = 2;
     public Text turnText;
 
     public List<Text> scoresList;
@@ -100,12 +103,14 @@ public class ServerControl : MonoBehaviour
         {
             myTurn = true;
             moveButton.gameObject.SetActive(true);
+            superClaimButton.gameObject.SetActive(true);
         });
 
         sioCom.Instance.On("ENDTURN", (data) =>
         {
             myTurn = false;
             moveButton.gameObject.SetActive(false);
+            superClaimButton.gameObject.SetActive(false);
 
             sioCom.Instance.Emit("TURNENDED");
         });
@@ -247,6 +252,19 @@ public class ServerControl : MonoBehaviour
                 hr.SetMaterial(claimMaterials[tilesClaimStatus[i]]);
                 hr.claimedBy = tilesClaimStatus[i];
             }
+        }
+    }
+
+    public void SuperClaim()
+    {
+        if (superClaimCounter > 0)
+        {
+            myPlayerController.currentLocationOb.GetComponent<HexRenderer>().SuperClaim(myPlayerController.claimNumber, myPlayerController.claimMaterial);
+            superClaimCounter--;
+            superClaimText.text = "Super Claim, uses: (" + superClaimCounter.ToString() + ")";
+
+            if (superClaimCounter == 0)
+                superClaimButton.image.color = Color.red;
         }
     }
 

@@ -134,6 +134,18 @@ public class HexRenderer : MonoBehaviour
         return lg;
         //checkingOverlap = true;
     }
+
+    public void SuperClaim(int claimer, Material m)
+    {
+        Collider[] lg = Physics.OverlapSphere(transform.position, 5f);
+
+        foreach (Collider c in lg)
+        {
+            if (c.gameObject.CompareTag("Tile")) {
+                c.gameObject.GetComponent<HexRenderer>().Claim(claimer, m);
+            }
+        }
+    }
     
     private void OnDrawGizmos()
     {
