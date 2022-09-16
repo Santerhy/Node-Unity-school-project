@@ -27,10 +27,17 @@ public class ServerControl : MonoBehaviour
     public List<Material> playerColors;
     public List<Material> claimMaterials;
     public Button moveButton;
+
     public Button superClaimButton;
     public Text superClaimText;
     private int superClaimCounter = 2;
+
     public Text turnText;
+
+    public Text roundsText;
+
+    public GameObject endPanel;
+    public List<Text> endTexts;
 
     public List<Text> scoresList;
 
@@ -72,6 +79,8 @@ public class ServerControl : MonoBehaviour
                 myPlayerController = pc;
             }
 
+            roundsText.text = "Rounds left: " + node["round"].ToString();
+
             //hgl.tiles[node["spawnIndex"]].GetComponent<HexRenderer>().Claim(pc.claimNumber, pc.claimMaterial);
 
             ClaimOneTile();
@@ -101,9 +110,12 @@ public class ServerControl : MonoBehaviour
 
         sioCom.Instance.On("STARTTURN", (data) =>
         {
+            //int rounds = int.Parse(data);
             myTurn = true;
             moveButton.gameObject.SetActive(true);
             superClaimButton.gameObject.SetActive(true);
+
+            //roundsText.text = "Rounds left: " + rounds.ToString();
         });
 
         sioCom.Instance.On("ENDTURN", (data) =>
@@ -120,6 +132,21 @@ public class ServerControl : MonoBehaviour
             int turn = int.Parse(data);
             
             ChangeTurnText(turn);
+        });
+
+        sioCom.Instance.On("GAMEOVER", (scores) =>
+        {
+            myTurn = false;
+            List<int> s = new List<int>();
+            JSONNode node = JSON.Parse(scores);
+
+            for (int i = 0; i < 4; i++)
+            {
+                s.Add(node[i]);
+                Debug.Log("Scores beg " + node[i]);
+            }
+
+            GameOver(s);
         });
 
         sioCom.Instance.On("UPDATESCORES", (data) =>
@@ -174,6 +201,12 @@ public class ServerControl : MonoBehaviour
             }
             UpdateListToTiles();
         });
+
+        sioCom.Instance.On("UPDATEROUNDS", (data) =>
+        {
+            int round = int.Parse(data);
+            roundsText.text = "Rounds left: " + round.ToString();
+        });
     }
 
     // Update is called once per frame
@@ -221,6 +254,83 @@ public class ServerControl : MonoBehaviour
         }
 
         return true;
+    }
+
+    private void GameOver(List<int> scores)
+    {
+        int[,] scoresArray = new int[players.Count, 2];
+        for (int i = 0; i < players.Count; i++) {
+            scoresArray[i, 0] = i;
+            scoresArray[i, 1] = scores[i];
+            endTexts[i].gameObject.SetActive(true);
+            Debug.Log("scores " + scoresArray[i,0]);
+        }
+
+        scoresArray = SortArray(scoresArray);
+
+        Debug.Log(scoresArray);
+
+        endPanel.gameObject.SetActive(true);
+
+        int c;
+        for (int i = 0; i < players.Count; i++)
+        {
+            c = (players.Count -1 ) - i;
+            endTexts[i].text += "Player " + (scoresArray[i, 0] + 1).ToString() + " scores: " + scoresArray[i, 1].ToString();
+            switch (scoresArray[i,0])
+            {
+                case 0:
+                    endTexts[i].color = Color.red;
+                    break;
+                case 1:
+                    endTexts[i].color = Color.blue;
+                    break;
+                case 2:
+                    endTexts[i].color = Color.yellow;
+                    break;
+                case 3:
+                    endTexts[i].color = Color.green;
+                    break;
+            }
+        }
+    }
+
+    private int[,] SortArray(int[,] array)
+    {
+        for (int j = 0; j < array.GetLength(0) -1; j++)
+        {
+            for (int i = 0; i < array.GetLength(0) - 1; i++)
+            {
+                if (array[i,1] < array[i+1, 1])
+                {
+                    int tempIndex = array[i, 0];
+                    int tempValue = array[i, 1];
+                    array[i, 0] = array[i + 1, 0];
+                    array[i, 1] = array[i + 1, 1];
+                    array[i + 1, 0] = tempIndex;
+                    array[i + 1, 1] = tempValue;
+                }
+            }
+        }
+        /*
+        for (int i = 0; i < array.GetLength(0); i++)
+        {
+            for (int j = array.GetLength(1) - 1; j > 0; j--)
+            {
+                for (int k = 0; k < j; k++)
+                {
+                    if (array[i, k] > array[i, k + 1])
+                    {
+                        int myTemp = array[i, k];
+                        array[i, k] = array[i, k + 1];
+                        array[i, k + 1] = myTemp;
+                    }
+                }
+            }
+        }
+        */
+        return array;
+        
     }
 
     private void UpdateTilesToList()
@@ -354,7 +464,6 @@ public class ServerControl : MonoBehaviour
         for (int i = 0; i<scoresList.Count; i++)
         {
             scoresList[i].text = "P" + (i + 1).ToString() + ": " + scores[i];
-            Debug.Log(i.ToString() + " " + scores[i].ToString());
         }
     }
 }
